@@ -5,8 +5,10 @@ import numpy as np
 
 print('1. Reading data from csv files......')
 try:
-    data_train = pd.read_csv('E:/DATN_Thacsi/data/data_train.csv')
-    data_test = pd.read_csv('E:/DATN_Thacsi/data/test_data.csv')
+    data_train = pd.read_csv('E:/DATN_Thacsi/data/data_train.csv', encoding="utf-8")
+    data_test = pd.read_csv('E:/DATN_Thacsi/data/test_data.csv', encoding="utf-8")
+    print(data_train.encoding)
+    print(data_test.encoding)
     print('Reading data successfully......')
 except Exception as e:
     print(f'Reading data failed {e}')
@@ -16,11 +18,6 @@ print("The number of row and column of data_train:", data_train.shape)
 print("The number of row and column of data_test:", data_test.shape)
 print('Shape train and test data successfully......')
 
-print('View top 10 data_train......')
-X_train = data_train['original']
-for i in range(10):
-    print(f'{i}: {X_train[i]}')
-
 print('3. Reading embedding......')
 # Read embedding
 word_dict = []
@@ -28,8 +25,10 @@ embeddings_index = {}
 embedding_dim = 300
 max_feature = len(embeddings_index) + 2
 try:
-    f = open("E:/DATN_Thacsi/data/W2V_ner.vec", encoding='utf-8')
+    f = open("E:/DATN_Thacsi/data/vi.vec", encoding='utf-8')
+    next(f)
     for line in f:
+        line = line.strip()
         values = line.split(' ')
         word = values[0]
         word_dict.append(word)
@@ -92,12 +91,12 @@ for para in paras:
     sentence_encode = []
     for sentence in para:
         words = sentence.split(" ")
-        sentence_vec = np.zeros((300))
+        sentence_vec = np.zeros((100))
         for word in words:
             if word in embeddings_index.keys():
                 sentence_vec += embeddings_index[word]
             else:
-                sentence_vec += np.random.randn(300)
+                sentence_vec += np.random.randn(100)
         sentence_vec = sentence_vec / len(words)
         sentence_encode.append(sentence_vec)
     paras_encode.append(sentence_encode)
@@ -187,7 +186,7 @@ for i in ['precision', 'recall', 'fmeasure']:
     print(f'Rouge_2: {rouge_2_train[i].mean() * 100}')
     print(f'Rouge_L: {rouge_L_train[i].mean() * 100} \n')
 
-print('8.4 Tính rouge_score test ========')
+print('8.4 Calculate rouge_score test ========')
 from rouge_score import rouge_scorer
 
 scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
@@ -215,4 +214,4 @@ for i in ['precision', 'recall', 'fmeasure']:
     print(f'Rouge_L: {rouge_L_test[i].mean() * 100}\n')
 
 if __name__ == '__main__':
-    print('Thuật toán Kmean tóm tắt văn bản hoàn thành')
+    print('Using Kmean summarize text successfully')
