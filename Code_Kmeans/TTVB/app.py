@@ -21,7 +21,7 @@ def main():
 
     # Đọc embedding từ Word2Vec
     print("Reading embeddings from Word2Vec...")
-    embeddings_index = read_embedding_from_word2vector()
+    # embeddings_index = read_embedding_from_word2vector()
 
     # Tạo tokens từ sentences
     print("Creating tokens from sentences...")
@@ -33,7 +33,7 @@ def main():
 
     # Chuyển đổi câu thành vector
     print("Converting sentences to vectors...")
-    paras_encode = convert_sentence_to_vector(paras, embeddings_index)
+    paras_encode = convert_sentence_to_vector(paras, None)
 
     # Huấn luyện mô hình
     print("Training model...")

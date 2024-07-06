@@ -10,7 +10,6 @@ from sklearn.metrics import pairwise_distances_argmin_min
 from rouge_score import rouge_scorer
 from sentence_transformers import SentenceTransformer
 
-EMBEDDING_DIM = 400
 ROOT = "E:/DATN_Thacsi/Code_Kmeans/models"
 ROOT_DATA = "E:/DATN_Thacsi/data"
 CURRENT_DATE = datetime.today().date()
@@ -35,31 +34,6 @@ def check_data(data_train: pd.DataFrame, data_test: pd.DataFrame):
     print('==> Shape train and test data successfully......')
 
 
-def read_embedding_from_word2vector() -> dict:
-    print('3. Reading embedding......')
-    word_dict = []
-    embeddings_index = {}
-    try:
-        file_word2vector = open(f'{ROOT_DATA}/vi.vec', encoding='utf-8')
-        next(file_word2vector)
-        for line in file_word2vector:
-            line = line.strip()
-            values = line.split(' ')
-            word = values[0]
-            word_dict.append(word)
-
-            coefs = np.asarray(values[1:], dtype='float32')
-            if len(coefs) == 100:
-                coefs = np.concatenate([coefs, np.random.randn(EMBEDDING_DIM-100)])
-            embeddings_index[word] = coefs
-        file_word2vector.close()
-        print('==> Read Embedding successfully')
-        return embeddings_index
-    except Exception as e:
-        print(f'Reading embedding failed {e}')
-        raise
-
-
 def create_tokens_from_Sentences(data: pd.DataFrame) -> list:
     print('4. Sentences tokenization.....Create token')
     # nltk.download('punkt')
@@ -79,9 +53,9 @@ def create_tokens_from_Sentences(data: pd.DataFrame) -> list:
         for sentence in sentences:
             cleaned_sentence = re.sub(reg, '', sentence).replace('   ', ' ').replace('  ', ' ').strip()
             paras.append(cleaned_sentence)
-        print(i)
+        # print(i)
         index.append(i)
-        # break
+        break
     return paras
 
 
@@ -91,19 +65,12 @@ def convert_sentence_to_vector(paras: list, embeddings_index: dict) -> list:
     # embedding (1 sentence -> 1 vector)
     paras_encode = []
     for para in paras:
+        para = para[:len(para) // 10]
         sentence_encode = []
         for sentence in para:
-            # words = sentence.split(" ")
-            # sentence_vec = np.zeros(EMBEDDING_DIM)
-            # for word in words:
-            #     if word in embeddings_index.keys():
-            #         sentence_vec += embeddings_index[word]
-            #     else:
-            #         sentence_vec += np.random.randn(EMBEDDING_DIM)
-            # sentence_vec = sentence_vec / len(words)
             sentence_vec = model.encode(sentence)
             sentence_encode.append(sentence_vec)
-            print(f'{sentence}')
+        print(f'{para}')
         paras_encode.append(sentence_encode)
     print('==> Sentences => Embedding.....Convert sentences to vector successfully\n')
     return paras_encode
@@ -192,11 +159,11 @@ def calculate_rouge(data: pd.DataFrame = None, start_idx: int = 0, lines_train_t
     scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
 
     for i in data.index:
-        print(i)
-        scores = scorer.score(data.summary[i], lines_train_test[i + start_idx])
-        rouge_1.append(list(scores['rouge1'][0:3]))
-        rouge_2.append(list(scores['rouge2'][0:3]))
-        rouge_L.append(list(scores['rougeL'][0:3]))
+        if i + start_idx < len(lines_train_test):
+            scores = scorer.score(data.summary[i], lines_train_test[i + start_idx])
+            rouge_1.append(list(scores['rouge1'][0:3]))
+            rouge_2.append(list(scores['rouge2'][0:3]))
+            rouge_L.append(list(scores['rougeL'][0:3]))
 
     rouge_1 = pd.DataFrame(rouge_1, columns=['precision', 'recall', 'fmeasure'])
     rouge_2 = pd.DataFrame(rouge_2, columns=['precision', 'recall', 'fmeasure'])
