@@ -1,7 +1,6 @@
 from TTVB.services import (
     reading_data_from_files,
     check_data,
-    read_embedding_from_word2vector,
     create_tokens_from_Sentences,
     convert_sentence_to_vector,
     train_model,
@@ -28,12 +27,12 @@ def main():
     paras_train = create_tokens_from_Sentences(data_train)
     paras_test = create_tokens_from_Sentences(data_test)
     paras = []
-    paras.append(paras_train)
-    paras.append(paras_test)  # Kết hợp các tokens
+    paras.extend(paras_train)
+    paras.extend(paras_test)
 
     # Chuyển đổi câu thành vector
     print("Converting sentences to vectors...")
-    paras_encode = convert_sentence_to_vector(paras, None)
+    paras_encode = convert_sentence_to_vector(paras)
 
     # Huấn luyện mô hình
     print("Training model...")

@@ -65,7 +65,7 @@ for i in data_train.index:
         paras_[j] = paras_[j].strip()
     paras.append(paras_)
     index.append(i)
-    break
+    # break
 
 print('4.2 Sentences tokenization => data_test.....')
 for i in data_test.index:
@@ -83,7 +83,7 @@ for i in data_test.index:
         paras_[j] = paras_[j].strip()
     paras.append(paras_)
     index.append(i)
-    break
+    # break
 print('==> Sentences tokenization successfully.\n')
 
 print('5.Sentences => Embedding.....Convert sentences to vector')
@@ -149,7 +149,7 @@ print('==> Kmean Summarizing successfully')
 print('7. Saving model.....')
 import pickle
 
-current_date = datetime.today().isoformat()
+current_date = datetime.today().date()
 with open(f"E:/DATN_Thacsi/data/kmeans_{current_date}.pkl", "wb") as f:
     pickle.dump(kmeans, f)
 with open(f"E:/DATN_Thacsi/data/label_{current_date}.pkl", "wb") as f:
