@@ -4,14 +4,76 @@ import nltk
 import pickle
 import re
 
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics import pairwise_distances_argmin_min, pairwise_distances
+from sklearn.metrics import pairwise_distances_argmin_min
+from gensim.models import KeyedVectors
+from tqdm import tqdm
+from pyvi import ViTokenizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from joblib import Parallel, delayed
 
-from TTVB.services import create_tokens_from_Sentences, convert_sentence_to_vector, find_closests
-
-ROOT = "E:/DATN_Thacsi/Code_Kmeans/models"
+ROOT = "E:/DATN_Thacsi/model-training/src/results"
 ROOT_DATA = "E:/DATN_Thacsi/data"
 
+# ===================================================
+def tfidf_weighted_vector(sentence, tfidf_vectorizer, fasttext):
+    words = tokenize_text(sentence)
+    tfidf_vector = tfidf_vectorizer.transform([" ".join(words)])
+    feature_names = tfidf_vectorizer.get_feature_names_out()
+    tfidf_scores = tfidf_vector.toarray().flatten()
+
+    vector = np.zeros(fasttext.vector_size)
+    total_weight = 0.0
+
+    for word, score in zip(feature_names, tfidf_scores):
+        if word in fasttext.key_to_index:
+            vector += fasttext[word] * score
+            total_weight += score
+
+    if total_weight > 0:
+        vector /= total_weight
+
+    return vector
+
+
+def process_paragraph(index, para, tfidf_vectorizer, fasttext):
+    sentence_vectors = []
+    print(f"Processing paragraph {index}")
+    for sentence in para:
+        words = sentence.split(" ")
+        sentence_vector = tfidf_weighted_vector(sentence, tfidf_vectorizer, fasttext)
+        sentence_vector = sentence_vector / len(words)
+        sentence_vectors.append(sentence_vector)
+    return sentence_vectors
+
+
+def tokenize_text(text):
+    return ViTokenizer.tokenize(text).split(" ")
+
+
+def convert_sentence_to_vector(paras: list) -> list:
+    print('5.Sentences => Embedding.....Convert sentences to vector')
+
+    fasttext = KeyedVectors.load_word2vec_format('E:/DATN_Thacsi/model-training/src/data/cc.vi.300.vec')
+    vocab = fasttext.key_to_index  # Danh sách các từ trong từ điển
+
+    # Tokenize and vectorize sentences with TF-IDF weights
+    tfidf_vectorizer = TfidfVectorizer(tokenizer=tokenize_text, vocabulary=vocab)
+    # Fit the TF-IDF vectorizer
+    tfidf_vectorizer.fit([" ".join(tokenize_text(sentence)) for para in paras for sentence in para])
+
+    # paras_encode = []
+    # for para in tqdm(paras, desc="Processing sentences", leave=False):
+    #     sentence_vectors = process_paragraph(para, tfidf_vectorizer, fasttext)
+    #     paras_encode.append(sentence_vectors)
+    #     break
+    index = 0
+    paras_encode = Parallel(n_jobs=-1, backend="multiprocessing")(
+        delayed(process_paragraph)(index, para, tfidf_vectorizer, fasttext) for para in tqdm(paras, desc="Processing sentences", leave=False)
+    )
+
+    print('==> Sentences => Embedding.....Convert sentences to vector successfully\n')
+    return paras_encode
+#=========================================================
 
 # load data
 print('1. Reading data need to be predicted......')
@@ -25,7 +87,7 @@ print("==> The number of row and column of data_dubao:", data_du_bao.shape)
 print('4. Sentences tokenization.....Create token')
 
 paras_du_bao = []
-reg = "[^\w\s]"
+reg = "[^\\w\\s]"
 
 print('==> Sentences tokenization => data_train, test.....')
 for i in data_du_bao.index:
@@ -49,16 +111,15 @@ paras_encode = convert_sentence_to_vector(paras_du_bao)
 
 
 print('6. Loading model Kmeans')
-with open(f'{ROOT}/kmeans_2024-07-11.pkl', "rb") as f:
+with open(f'{ROOT}/kmeans_2024-07-29.pkl', "rb") as f:
     kmeans = pickle.load(f)
-with open(f'{ROOT}/label_2024-07-11.pkl', "rb") as f:
+with open(f'{ROOT}/label_2024-07-29.pkl', "rb") as f:
     kmeans.labels_ = pickle.load(f)
 print('==> Load model Kmeans successfully')
 
 print('6. Summarize data du bao:')
 result_du_bao = []
-# print("1. " + data_du_bao['original'][0])
-# print("2. " + data_du_bao['original'][1])
+
 for i in range(len(paras_encode)):
     X = paras_encode[i]
 
